@@ -1,0 +1,50 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tasks (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  due_date TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+  priority VARCHAR(20) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  tags VARCHAR(255)[] DEFAULT ARRAY[]::VARCHAR(255)[],
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Для быстрого поиска задач пользователя
+CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+
+-- Для фильтрации по статусу
+CREATE INDEX idx_tasks_status ON tasks(status);
+
+-- Для фильтрации по приоритету
+CREATE INDEX idx_tasks_priority ON tasks(priority);
+
+-- Для поиска по датам
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+
+-- Для поиска по тегам (GIN индекс для массивов)
+CREATE INDEX idx_tasks_tags ON tasks USING GIN(tags);
+
+
+CREATE TABLE tags (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE task_tags (
+  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (task_id, tag_id)
+);
